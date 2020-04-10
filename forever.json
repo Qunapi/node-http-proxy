@@ -1,0 +1,7 @@
+{
+  "uid": "lab_proxy",
+  "append": true,
+  "watch": true,
+  "script": "index.js",
+  "sourceDir": "/home/qunapi/ksis/lab4"
+}
