@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 
+const blacklist = require("/home/qunapi/ksis/lab4/blacklist.json");
+
 const net = require("net");
 const fs = require("fs").promises;
 
@@ -17,30 +19,41 @@ server.on("connection", (clientToProxySocket) => {
   // We need only the data once, the starting packet
   const urls = [];
   clientToProxySocket.on("data", (data) => urls.push(getURLFromData(data)));
-  clientToProxySocket.once("data", (data) => {
+  clientToProxySocket.once("data", async (data) => {
     const HTTP_DEFAULT_PORT = 80;
     const serverAddress = getHost(data);
 
-    const proxyToServerSocket = net.createConnection(
-      {
-        host: serverAddress,
-        port: HTTP_DEFAULT_PORT,
-      },
-      () => {
-        proxyToServerSocket.write(data);
+    if (!blacklist.includes(serverAddress)) {
+      console.log(serverAddress);
+      const proxyToServerSocket = net.createConnection(
+        {
+          host: serverAddress,
+          port: HTTP_DEFAULT_PORT,
+        },
+        () => {
+          proxyToServerSocket.write(data);
 
-        clientToProxySocket.pipe(proxyToServerSocket);
-        proxyToServerSocket.pipe(clientToProxySocket);
-      },
-    );
-    proxyToServerSocket.on;
-    proxyToServerSocket.on("data", (data) => {
-      const responseStatus = data.toString("ASCII").split("\r\n")[0];
+          clientToProxySocket.pipe(proxyToServerSocket);
+          proxyToServerSocket.pipe(clientToProxySocket);
+        },
+      );
+      proxyToServerSocket.on("data", (data) => {
+        const responseStatus = data.toString("ASCII").split("\r\n")[0];
+        fs.appendFile(
+          "/home/qunapi/ksis/lab4/log.txt",
+          `URL: ${urls.pop()}\n${responseStatus}\n`,
+        );
+      });
+    } else {
       fs.appendFile(
         "/home/qunapi/ksis/lab4/log.txt",
-        `URL: ${urls.pop()}\n${responseStatus}\n`,
+        `URL: ${serverAddress}\nHTTP/1.0 403 Forbidden\n`,
       );
-    });
+      const denyHTML = await fs.readFile("/home/qunapi/ksis/lab4/denied.html");
+      clientToProxySocket.write("HTTP/1.0 403 Forbidden\r\n" + "\r\n");
+      clientToProxySocket.write(denyHTML);
+      clientToProxySocket.end();
+    }
   });
 });
 
