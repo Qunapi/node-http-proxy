@@ -35,6 +35,13 @@ server.on("connection", (clientToProxySocket) => {
 
           clientToProxySocket.pipe(proxyToServerSocket);
           proxyToServerSocket.pipe(clientToProxySocket);
+
+          clientToProxySocket.on("error", () => {
+            proxyToServerSocket.end();
+          });
+          clientToProxySocket.on("end", () => {
+            proxyToServerSocket.end();
+          });
         },
       );
       proxyToServerSocket.on("data", (data) => {
@@ -43,6 +50,12 @@ server.on("connection", (clientToProxySocket) => {
           "/home/qunapi/ksis/lab4/log.txt",
           `URL: ${urls.pop()}\n${responseStatus}\n`,
         );
+      });
+      proxyToServerSocket.on("error", () => {
+        clientToProxySocket.end();
+      });
+      proxyToServerSocket.on("end", () => {
+        clientToProxySocket.end();
       });
     } else {
       fs.appendFile(
