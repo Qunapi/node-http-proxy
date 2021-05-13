@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-const blacklist = require("/home/qunapi/ksis/lab4/blacklist.json");
+const blacklist = require("./blacklist.json");
 
 const net = require("net");
 const fs = require("fs").promises;
@@ -39,17 +39,14 @@ server.on("connection", (clientToProxySocket) => {
       );
       proxyToServerSocket.on("data", (data) => {
         const responseStatus = data.toString("ASCII").split("\r\n")[0];
-        fs.appendFile(
-          "/home/qunapi/ksis/lab4/log.txt",
-          `URL: ${urls.pop()}\n${responseStatus}\n`,
-        );
+        fs.appendFile("./log.txt", `URL: ${urls.pop()}\n${responseStatus}\n`);
       });
     } else {
       fs.appendFile(
-        "/home/qunapi/ksis/lab4/log.txt",
+        "./log.txt",
         `URL: ${serverAddress}\nHTTP/1.0 403 Forbidden\n`,
       );
-      const denyHTML = await fs.readFile("/home/qunapi/ksis/lab4/denied.html");
+      const denyHTML = await fs.readFile("./denied.html");
       clientToProxySocket.write("HTTP/1.0 403 Forbidden\r\n" + "\r\n");
       clientToProxySocket.write(denyHTML);
       clientToProxySocket.end();
