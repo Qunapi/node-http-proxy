@@ -15,22 +15,25 @@ function getURLFromData(data) {
   return data.toString().split("\r\n")[0];
 }
 
+const HTTP_DEFAULT_PORT = 80;
+
 server.on("connection", (clientToProxySocket) => {
   // We need only the data once, the starting packet
   const urls = [];
   clientToProxySocket.on("data", (data) => urls.push(getURLFromData(data)));
   clientToProxySocket.once("data", async (data) => {
-    const HTTP_DEFAULT_PORT = 80;
-    const serverAddress = getHost(data);
-
+    const serverAddressWithPort = getHost(data);
+    const serverAddress = serverAddressWithPort.replace(/:.*/, "");
+    const port =
+      Number(serverAddressWithPort.split(":")[1]) || HTTP_DEFAULT_PORT;
     if (!blacklist.includes(serverAddress)) {
-      console.log(serverAddress);
       const proxyToServerSocket = net.createConnection(
         {
           host: serverAddress,
-          port: HTTP_DEFAULT_PORT,
+          port: port,
         },
         () => {
+          data = data.toString().replace(/(?<=^GET )http:\/\/[^/]*/, "");
           proxyToServerSocket.write(data);
 
           clientToProxySocket.pipe(proxyToServerSocket);
